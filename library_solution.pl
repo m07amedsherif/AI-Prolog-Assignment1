@@ -14,7 +14,6 @@ most_borrowed_book(B) :-
     setof(Book, Author^book(Book, Author), Books),
     most_borrowed_from_list(Books, B).
 
-%% Rule 4
 most_borrowed_from_list([B], B).
 most_borrowed_from_list([B1,B2|Rest], Max) :-
     borrowers_count(B1, N1),
@@ -25,13 +24,16 @@ most_borrowed_from_list([B1,B2|Rest], Max) :-
         most_borrowed_from_list([B2|Rest], Max)
     ).
 
+%% Rule 4
 ratings_of_book(Book, L) :-
     findall((Student,Score), rating(Student, Book, Score), L).
 
+%% Rule 5
 top_reviewer(Student) :-
     setof(Score-S, B^rating(S,B,Score), List),
     last(List, _MaxScore-Student).
 
+%% Rule 6
 most_common_topic_for_student(Student, Topic) :-
     books_borrowed_by_student(Student, Books),
     collect_topics(Books, Topics),
@@ -62,4 +64,5 @@ count(X, [X|T], N) :-
     count(X, T, N1),
     N is N1 + 1.
 count(X, [_|T], N) :-
+
     count(X, T, N).
