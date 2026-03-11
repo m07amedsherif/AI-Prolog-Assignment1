@@ -1,19 +1,66 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%% Library Solution in Prolog %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%% Rule 1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Rule 1: Books borrowed by a student %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 books_borrowed_by_student(Student, L) :-
-    findall(Book, borrowed(Student, Book), L).
+    collect_books(Student, [], L).
 
-%% Rule 2
+collect_books(Student, Visited, [Book|Rest]) :-
+    borrowed(Student, Book),
+    not_member(Book, Visited),
+    collect_books(Student, [Book|Visited], Rest).
+
+collect_books(_, _, []).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Rule 2: Number of borrowers for a book %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 borrowers_count(Book, N) :-
-    findall(Student, borrowed(Student, Book), L),
-    length(L, N).
+    collect_students(Book, [], L),
+    list_length(L, N).
 
-%% Rule 3
+collect_students(Book, Visited, [Student|Rest]) :-
+    borrowed(Student, Book),
+    not_member(Student, Visited),
+    collect_students(Book, [Student|Visited], Rest).
+
+collect_students(_, _, []).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Rule 3: Most borrowed book %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 most_borrowed_book(B) :-
-    setof(Book, Author^book(Book, Author), Books),
+    collect_books_list([], Books),
     most_borrowed_from_list(Books, B).
 
+%% Collect all books from the database (no duplicates)
+collect_books_list(Visited, [Book|Rest]) :-
+    book(Book, _),
+    not_member(Book, Visited),
+    collect_books_list([Book|Visited], Rest).
+
+collect_books_list(_, []).
+
+%% Find the book with the maximum number of borrowers
+most_borrowed_from_list([Book], Book).
+
+most_borrowed_from_list([B1, B2 | Rest], Max) :-
+    borrowers_count(B1, N1),
+    borrowers_count(B2, N2),
+    N1 >= N2,
+    most_borrowed_from_list([B1 | Rest], Max).
+
+most_borrowed_from_list([B1, B2 | Rest], Max) :-
+    borrowers_count(B1, N1),
+    borrowers_count(B2, N2),
+    N1 < N2,
+    most_borrowed_from_list([B2 | Rest], Max).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Helper predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+list_length([], 0).
+list_length([_|T], N) :-
+    list_length(T, N1),
+    N is N1 + 1.
+
+not_member(_, []).
+not_member(X, [H|T]) :-
+    X \= H,
+    not_member(X, T).
+
+%% Rule 4
 most_borrowed_from_list([B], B).
 most_borrowed_from_list([B1,B2|Rest], Max) :-
     borrowers_count(B1, N1),
@@ -24,16 +71,13 @@ most_borrowed_from_list([B1,B2|Rest], Max) :-
         most_borrowed_from_list([B2|Rest], Max)
     ).
 
-%% Rule 4
 ratings_of_book(Book, L) :-
     findall((Student,Score), rating(Student, Book, Score), L).
 
-%% Rule 5
 top_reviewer(Student) :-
     setof(Score-S, B^rating(S,B,Score), List),
     last(List, _MaxScore-Student).
 
-%% Rule 6
 most_common_topic_for_student(Student, Topic) :-
     books_borrowed_by_student(Student, Books),
     collect_topics(Books, Topics),
@@ -64,5 +108,4 @@ count(X, [X|T], N) :-
     count(X, T, N1),
     N is N1 + 1.
 count(X, [_|T], N) :-
-
     count(X, T, N).
